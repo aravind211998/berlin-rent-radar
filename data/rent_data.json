@@ -1,0 +1,92 @@
+{
+  "updated": "2024-05",
+  "avg_price": 15.47,
+  "cheapest": "Marzahn",
+  "priciest": "Mitte",
+  "neighborhoods": [
+    {
+      "neighborhood": "Mitte",
+      "price": 22.5,
+      "tier": "premium",
+      "lat": 52.52,
+      "lng": 13.405
+    },
+    {
+      "neighborhood": "Prenzlauer Berg",
+      "price": 19.8,
+      "tier": "premium",
+      "lat": 52.5384,
+      "lng": 13.4142
+    },
+    {
+      "neighborhood": "Charlottenburg",
+      "price": 18.6,
+      "tier": "premium",
+      "lat": 52.517,
+      "lng": 13.2991
+    },
+    {
+      "neighborhood": "Friedrichshain",
+      "price": 17.9,
+      "tier": "mid",
+      "lat": 52.5163,
+      "lng": 13.454
+    },
+    {
+      "neighborhood": "Kreuzberg",
+      "price": 17.2,
+      "tier": "mid",
+      "lat": 52.499,
+      "lng": 13.403
+    },
+    {
+      "neighborhood": "Neukoelln",
+      "price": 14.9,
+      "tier": "mid",
+      "lat": 52.4812,
+      "lng": 13.4353
+    },
+    {
+      "neighborhood": "Wedding",
+      "price": 13.4,
+      "tier": "affordable",
+      "lat": 52.55,
+      "lng": 13.36
+    },
+    {
+      "neighborhood": "Tempelhof",
+      "price": 13.1,
+      "tier": "affordable",
+      "lat": 52.468,
+      "lng": 13.383
+    },
+    {
+      "neighborhood": "Lichtenberg",
+      "price": 12.8,
+      "tier": "affordable",
+      "lat": 52.5124,
+      "lng": 13.502
+    },
+    {
+      "neighborhood": "Spandau",
+      "price": 12.2,
+      "tier": "affordable",
+      "lat": 52.535,
+      "lng": 13.198
+    },
+    {
+      "neighborhood": "Reinickendorf",
+      "price": 12.0,
+      "tier": "affordable",
+      "lat": 52.574,
+      "lng": 13.333
+    },
+    {
+      "neighborhood": "Marzahn",
+      "price": 11.2,
+      "tier": "affordable",
+      "lat": 52.54,
+      "lng": 13.57
+    }
+  ]
+}
