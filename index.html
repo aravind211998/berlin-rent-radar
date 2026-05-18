@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Berlin Rent Radar</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #f5f5f5; color: #222; }
+    header { background: #1a1a2e; color: white; padding: 1.5rem 2rem; }
+    header h1 { font-size: 1.6rem; font-weight: 600; }
+    header p { font-size: 0.9rem; opacity: 0.7; margin-top: 4px; }
+    .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; padding: 1.5rem 2rem; }
+    .metric { background: white; border-radius: 10px; padding: 1.2rem; border: 1px solid #eee; }
+    .metric-label { font-size: 0.75rem; color: #888; margin-bottom: 6px; text-transform: uppercase; }
+    .metric-value { font-size: 1.6rem; font-weight: 600; color: #1a1a2e; }
+    .metric-sub { font-size: 0.75rem; color: #aaa; margin-top: 4px; }
+    .main { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 0 2rem 1rem; }
+    .card { background: white; border-radius: 10px; padding: 1.2rem; border: 1px solid #eee; }
+    .card h2 { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #1a1a2e; }
+    #map { height: 340px; border-radius: 8px; }
+    .checker { padding: 0 2rem 2rem; }
+    .checker .card { max-width: 100%; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 1rem; align-items: end; margin-bottom: 1rem; }
+    label { font-size: 0.8rem; color: #666; display: block; margin-bottom: 5px; }
+    select, input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 0.9rem; }
+    button { background: #1a1a2e; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-size: 0.9rem; cursor: pointer; white-space: nowrap; }
+    button:hover { background: #2a2a4e; }
+    .result { padding: 1rem; border-radius: 8px; margin-top: 1rem; display: none; }
+    .result.good { background: #e8f5e9; color: #2e7d32; }
+    .result.fair { background: #fff8e1; color: #f57f17; }
+    .result.high { background: #ffebee; color: #c62828; }
+    .result-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 4px; }
+    .result-detail { font-size: 0.85rem; opacity: 0.85; }
+    footer { text-align: center; padding: 1.5rem; font-size: 0.8rem; color: #aaa; }
+    @media(max-width: 768px) {
+      .main { grid-template-columns: 1fr; }
+      .form-row { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Berlin Rent Radar</h1>
+  <p>Real rent data across 12 Berlin neighborhoods · Built with Python + AWS</p>
+</header>
+
+<div class="metrics">
+  <div class="metric">
+    <p class="metric-label">City average</p>
+    <p class="metric-value" id="avg">€15.80</p>
+    <p class="metric-sub">per m² / month</p>
+  </div>
+  <div class="metric">
+    <p class="metric-label">Most affordable</p>
+    <p class="metric-value" id="cheapest">Marzahn</p>
+    <p class="metric-sub">€11.20 / m²</p>
+  </div>
+  <div class="metric">
+    <p class="metric-label">Most expensive</p>
+    <p class="metric-value" id="priciest">Mitte</p>
+    <p class="metric-sub">€22.50 / m²</p>
+  </div>
+  <div class="metric">
+    <p class="metric-label">Best value</p>
+    <p class="metric-value">Neukölln</p>
+    <p class="metric-sub">Central + affordable</p>
+  </div>
+</div>
+
+<div class="main">
+  <div class="card">
+    <h2>Rent by neighborhood</h2>
+    <div style="position:relative;height:340px">
+      <canvas id="chart" role="img" aria-label="Bar chart of rent prices by Berlin neighborhood"></canvas>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Neighborhood map</h2>
+    <div id="map"></div>
+  </div>
+</div>
+
+<div class="checker">
+  <div class="card">
+    <h2>Is your rent fair?</h2>
+    <div class="form-row">
+      <div>
+        <label>Neighborhood</label>
+        <select id="hood"></select>
+      </div>
+      <div>
+        <label>Size (m²)</label>
+        <input type="number" id="size" placeholder="e.g. 60">
+      </div>
+      <div>
+        <label>Your rent (€/month)</label>
+        <input type="number" id="rent" placeholder="e.g. 950">
+      </div>
+      <div>
+        <button onclick="checkRent()">Check</button>
+      </div>
+    </div>
+    <div class="result" id="result">
+      <p class="result-title" id="result-title"></p>
+      <p class="result-detail" id="result-detail"></p>
+    </div>
+  </div>
+</div>
+
+<footer>Built by Aravind Bandameedi · Python · AWS S3 · Chart.js · Leaflet.js · Data: Berliner Mietspiegel 2023</footer>
+
+<script>
+fetch('data/rent_data.json')
+  .then(r => r.json())
+  .then(data => {
+    const hoods = data.neighborhoods;
+
+    document.getElementById('avg').textContent = '€' + data.avg_price;
+    document.getElementById('cheapest').textContent = data.cheapest;
+    document.getElementById('priciest').textContent = data.priciest;
+
+    const tierColor = { premium: '#e74c3c', mid: '#f39c12', affordable: '#27ae60' };
+
+    new Chart(document.getElementById('chart'), {
+      type: 'bar',
+      data: {
+        labels: hoods.map(h => h.neighborhood),
+        datasets: [{
+          label: '€/m²',
+          data: hoods.map(h => h.price),
+          backgroundColor: hoods.map(h => tierColor[h.tier] + 'cc'),
+          borderColor: hoods.map(h => tierColor[h.tier]),
+          borderWidth: 1,
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { font: { size: 10 }, maxRotation: 45, autoSkip: false } },
+          y: { min: 8, max: 25, ticks: { callback: v => '€' + v } }
+        }
+      }
+    });
+
+    const map = L.map('map').setView([52.52, 13.405], 11);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    hoods.forEach(h => {
+      const color = tierColor[h.tier];
+      const marker = L.circleMarker([h.lat, h.lng], {
+        radius: 12, fillColor: color, color: '#fff',
+        weight: 2, opacity: 1, fillOpacity: 0.85
+      }).addTo(map);
+      marker.bindPopup(`<b>${h.neighborhood}</b><br>€${h.price}/m²<br><span style="color:${color}">${h.tier}</span>`);
+    });
+
+    const select = document.getElementById('hood');
+    hoods.forEach(h => {
+      const o = document.createElement('option');
+      o.value = h.neighborhood;
+      o.dataset.price = h.price;
+      o.textContent = h.neighborhood;
+      select.appendChild(o);
+    });
+  });
+
+function checkRent() {
+  const hood = document.getElementById('hood');
+  const size = parseFloat(document.getElementById('size').value);
+  const rent = parseFloat(document.getElementById('rent').value);
+  const fairPrice = parseFloat(hood.options[hood.selectedIndex].dataset.price);
+  if (!size || !rent) return;
+  const fairRent = fairPrice * size;
+  const diff = rent - fairRent;
+  const pct = Math.round((rent / fairRent) * 100);
+  const box = document.getElementById('result');
+  box.style.display = 'block';
+  if (pct <= 95) {
+    box.className = 'result good';
+    document.getElementById('result-title').textContent = 'Great deal — below market rate';
+    document.getElementById('result-detail').textContent = `You save €${Math.abs(diff).toFixed(0)}/month vs market. That's €${Math.round(Math.abs(diff) * 12)} per year saved.`;
+  } else if (pct <= 115) {
+    box.className = 'result fair';
+    document.getElementById('result-title').textContent = 'Fair price — within market range';
+    document.getElementById('result-detail').textContent = `Market rate for ${size}m² in ${hood.value} is around €${fairRent.toFixed(0)}/month. You're paying ${pct}% of that.`;
+  } else {
+    box.className = 'result high';
+    document.getElementById('result-title').textContent = `Overpriced — you pay ${pct}% of market rate`;
+    document.getElementById('result-detail').textContent = `Fair rent for ${size}m² in ${hood.value} is €${fairRent.toFixed(0)}/month. You may be overpaying by €${diff.toFixed(0)}/month.`;
+  }
+}
+</script>
+</body>
+</html>
